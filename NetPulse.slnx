@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="NetPulse.Application/NetPulse.Application.csproj" />
+  <Project Path="NetPulse.Cli/NetPulse.Cli.csproj" />
+  <Project Path="NetPulse.Domain/NetPulse.Domain.csproj" />
+  <Project Path="NetPulse.Infrastructure/NetPulse.Infrastructure.csproj" />
+  <Project Path="NetPulse.Worker/NetPulse.Worker.csproj" />
+</Solution>
