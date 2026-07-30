@@ -29,10 +29,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "E:\projekty\NetPulse\NetPulse.Worker\bin\Publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-[Run]
-; 1. Rejestracja usługi w systemie Windows (bez startowania od razu!)
-Filename: "{sys}\sc.exe"; Parameters: "create ""{#MyAppServiceName}"" binPath= ""{app}\{#MyAppExeName}"" start= auto displayname= ""{#MyAppName}"""; Flags: runhidden
-
 [UninstallRun]
 Filename: "{sys}\sc.exe"; Parameters: "stop ""{#MyAppServiceName}"""; Flags: runhidden
 Filename: "{sys}\sc.exe"; Parameters: "delete ""{#MyAppServiceName}"""; Flags: runhidden
@@ -42,13 +38,13 @@ var
   TelegramPage: TInputQueryWizardPage;
   HelpLabel: TNewStaticText;
 
-// Funkcja pomocnicza do usuwania WSZYSTKICH spacji z ciągu znaków
+// Funkcja do usuwania spacji z ciągu znaków
 function CleanInput(Value: String): String;
 var
   Cleaned: String;
 begin
   Cleaned := Trim(Value);
-  StringChange(Cleaned, ' ', ''); // Usuwa ewentualne spacje wewnątrz tekstu
+  StringChange(Cleaned, ' ', '');
   Result := Cleaned;
 end;
 
@@ -85,10 +81,11 @@ var
   BotTokenValue: String;
   ChatIdValue: String;
   ResultCode: Integer;
+  ExePath: String;
 begin
   if CurStep = ssPostInstall then
   begin
-    // Oczyszczamy wpisane wartości ze spacji!
+    // 1. Pobieramy i oczyszczamy wpisane dane
     BotTokenValue := CleanInput(TelegramPage.Values[0]);
     ChatIdValue := CleanInput(TelegramPage.Values[1]);
 
@@ -115,10 +112,14 @@ begin
       '  }' + #13#10 +
       '}';
 
-    // 1. Zapisujemy wyczyszczony appsettings.json
+    // 2. Zapisujemy zaktualizowany plik appsettings.json
     SaveStringToFile(ConfigFilePath, JsonContent, False);
 
-    // 2. Uruchamiamy usługę
-    Exec(ExpandConstant('{sys}\sc.exe'), 'start "NetPulseService"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    // 3. Tworzymy usługę systemową (ścieżka w cudzysłowach zapobiega błędom przy spacjach)
+    ExePath := ExpandConstant('{app}\{#MyAppExeName}');
+    Exec(ExpandConstant('{sys}\sc.exe'), 'create "{#MyAppServiceName}" start= auto binPath= "' + ExePath + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    // 4. Uruchamiamy usługę TERAZ (gdy plik JSON już istnieje na dysku)
+    Exec(ExpandConstant('{sys}\sc.exe'), 'start "{#MyAppServiceName}"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
 end;
